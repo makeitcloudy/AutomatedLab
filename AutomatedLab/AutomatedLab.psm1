@@ -109,7 +109,7 @@ function Install-Modules
         }
         else
         {
-            Write-Verbose "$moduleName version $desiredVersion is already installed on $($Env:COMPUTERNAME)." -ForegroundColor Green
+            Write-Warning "$moduleName version $desiredVersion is already installed on $($Env:COMPUTERNAME)."
         }
     }
 }
