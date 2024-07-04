@@ -87,6 +87,7 @@ function Install-Modules
     
     # https://gist.githubusercontent.com/fabricesemti80/a776b85767df3453f253a5a773437214/raw/6b0dd9a340e3d1c5c898e6b5e04e90e427fd6498/New-ADDSC.psm1
 
+    [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
         $modules
@@ -117,6 +118,7 @@ function Install-Modules
 function Create-SelfSignedCert
 # https://gist.githubusercontent.com/fabricesemti80/a776b85767df3453f253a5a773437214/raw/6b0dd9a340e3d1c5c898e6b5e04e90e427fd6498/New-ADDSC.psm1
 {
+    [CmdletBinding()]
     param (
         $certFolder = 'C:\dsc\cert'
         ,
