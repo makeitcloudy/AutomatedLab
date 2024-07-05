@@ -3,8 +3,8 @@ function Get-GitModule
     <#
     .SYNOPSIS
     .DESCRIPTION
-    .PARAMETER One
-    .PARAMETER Two
+    .PARAMETER GithubUserName
+    .PARAMETER ModuleName
     .EXAMPLE
     .EXAMPLE
     .LINK
@@ -74,11 +74,36 @@ function Get-GitModule
 }
 
 function Get-OperatingSystemType {
+    <#
+    .SYNOPSIS
+
+    It returns false if the OS is server based.
+    It returns true if the OS is desktop type.
+    .DESCRIPTION
+
+    The SKU matches the values available in 2024.07
+
+    .PARAMETER NodeName
+    .EXAMPLE
+    .EXAMPLE
+    .LINK
+
+    https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-operatingsystem#examples
+    https://learn.microsoft.com/en-us/windows/win32/cimwin32prov/win32-operatingsystem
+    #>
+
     param (
         [Parameter(Mandatory=$false,Position=0,ValueFromPipelineByPropertyName=$true)]    
         [String]$NodeName = $env:COMPUTERNAME
     )
 
+    BEGIN
+    {
+        
+    }
+
+    PROCESS
+    {
     # Get OS information using CIM
     $os = Get-CimInstance -ClassName Win32_OperatingSystem -ComputerName $NodeName
 
@@ -131,6 +156,12 @@ function Get-OperatingSystemType {
     }
 
     return $isDesktop
+    }
+
+    END
+    {
+
+    }
 }
 
 function Install-Modules
