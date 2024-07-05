@@ -10,68 +10,128 @@ function Get-GitModule
     .LINK
     #>
         
-        [CmdletBinding()]
-        Param
-        (
-            [Parameter(Mandatory=$true,Position=0,ValueFromPipelineByPropertyName=$true)]
-            [ValidateNotNullOrEmpty()]
-            $GithubUserName,
+    [CmdletBinding()]
+    Param
+    (
+        [Parameter(Mandatory=$true,Position=0,ValueFromPipelineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        $GithubUserName,
 
-            [Parameter(Mandatory=$true,Position=1,ValueFromPipelineByPropertyName=$true)]
-            [ValidateNotNullOrEmpty()]
-            $ModuleName
-        )
+        [Parameter(Mandatory=$true,Position=1,ValueFromPipelineByPropertyName=$true)]
+        [ValidateNotNullOrEmpty()]
+        $ModuleName
+    )
     
-        BEGIN
-        {
-            $WarningPreference = "Continue"
-            $VerbosePreference = "Continue"
-            $InformationPreference = "Continue"
-            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - It downloads module from Github repository"
-            $startDate = Get-Date
+    BEGIN
+    {
+        $WarningPreference = "Continue"
+        $VerbosePreference = "Continue"
+        $InformationPreference = "Continue"
+        Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - It downloads module from Github repository"
+        $startDate = Get-Date
 
-            #initialize variables
-            #$ModuleName                    = "AutomatedLab"
-            #$GitHubUserName                = 'makeitcloudy'
-            $repoUrl                       = 'https://github.com',$GithubUserName,$ModuleName,'archive/refs/heads/main.zip' -join '/'
+        #initialize variables
+        #$ModuleName                    = "AutomatedLab"
+        #$GitHubUserName                = 'makeitcloudy'
+        $repoUrl                       = 'https://github.com',$GithubUserName,$ModuleName,'archive/refs/heads/main.zip' -join '/'
+        
+        $modulePath                    = "C:\Program Files\WindowsPowerShell\Modules\$ModuleName"
 
-            $modulePath                    = "C:\Program Files\WindowsPowerShell\Modules\$ModuleName"
+        $tempZipFileName               = $ModuleName,'.zip' -join ''
+        $tempZipFullPath               = "$env:TEMP",$tempZipFileName -join '\'
 
-            $tempZipFileName               = $ModuleName,'.zip' -join ''
-            $tempZipFullPath               = "$env:TEMP",$tempZipFileName -join '\'
+        $extractedModuleTempFolderName = $ModuleName,'main' -join '-'
+        $extractedModuleTempFullPath   = "$env:TEMP",$extractedModuleTempFolderName,$ModuleName -join '\'
 
-            $extractedModuleTempFolderName = $ModuleName,'main' -join '-'
-            $extractedModuleTempFullPath   = "$env:TEMP",$extractedModuleTempFolderName,$ModuleName -join '\'
+    }
+    
+    PROCESS
+    {
+        try {
+            # download the module from github
+            Invoke-WebRequest -Uri $repoUrl -OutFile $tempZipFullPath
+            # expand the archive to \AppData\Local\Temp
+            Expand-Archive -Path $tempZipFullPath -DestinationPath $env:TEMP
+            # copy the module folder from the repo directory to the C:\Program Files\WindowsPowerShell\Modules\[moduleName]
+            Copy-Item -Path $extractedModuleTempFullPath -Destination $modulePath -Recurse -Force
 
+            #cleanup
+            # remove the downloaded repository zip file
+            Remove-Item -Path $tempZipFullPath -Force
+            # remove the extracted repository folder from the \AppData\Local\Temp
+            Remove-Item -Path $(Join-Path -Path $env:TEMP -ChildPath $extractedModuleTempFolderName) -Recurse -Force
         }
+        catch {
     
-        PROCESS
-        {
-            try {
-                # download the module from github
-                Invoke-WebRequest -Uri $repoUrl -OutFile $tempZipFullPath
-                # expand the archive to \AppData\Local\Temp
-                Expand-Archive -Path $tempZipFullPath -DestinationPath $env:TEMP
-                # copy the module folder from the repo directory to the C:\Program Files\WindowsPowerShell\Modules\[moduleName]
-                Copy-Item -Path $extractedModuleTempFullPath -Destination $modulePath -Recurse -Force
-
-                #cleanup
-                # remove the downloaded repository zip file
-                Remove-Item -Path $tempZipFullPath -Force
-                # remove the extracted repository folder from the \AppData\Local\Temp
-                Remove-Item -Path $(Join-Path -Path $env:TEMP -ChildPath $extractedModuleTempFolderName) -Recurse -Force
-            }
-            catch {
-    
-            }
-        }
-    
-        END
-        {
-            $endDate = Get-Date
-            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
         }
     }
+    
+    END
+    {
+        $endDate = Get-Date
+        Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
+    }
+}
+
+function Get-OperatingSystemType {
+    param (
+        [Parameter(Mandatory=$false,Position=0,ValueFromPipelineByPropertyName=$true)]    
+        [String]$NodeName = $env:COMPUTERNAME
+    )
+
+    # Get OS information using CIM
+    $os = Get-CimInstance -ClassName Win32_OperatingSystem -ComputerName $NodeName
+
+    # Initialize the result
+    $isDesktop = $false
+
+    # Use switch statement to check the OperatingSystemSKU
+    switch ($os.OperatingSystemSKU) {
+        4 { $isDesktop = $true }   # Windows Home
+        6 { $isDesktop = $true }   # Windows Business
+        7 { $isDesktop = $true }   # Windows Server Standard
+        12 { $isDesktop = $true }  # Windows Server Datacenter
+        13 { $isDesktop = $true }  # Windows Server Enterprise
+        18 { $isDesktop = $true }  # Windows Business N
+        20 { $isDesktop = $true }  # Windows Home N
+        27 { $isDesktop = $true }  # Windows Server Datacenter N
+        28 { $isDesktop = $true }  # Windows Server Standard N
+        33 { $isDesktop = $true }  # Windows Server Enterprise N
+        36 { $isDesktop = $true }  # Windows Business
+        37 { $isDesktop = $true }  # Windows Business N
+        39 { $isDesktop = $true }  # Windows Server Essentials
+        44 { $isDesktop = $true }  # Windows Server Essentials R2
+        48 { $isDesktop = $true }  # Windows Professional
+        49 { $isDesktop = $true }  # Windows Professional N
+        51 { $isDesktop = $true }  # Windows Education
+        98 { $isDesktop = $true }  # Windows Education N
+        99 { $isDesktop = $true }  # Windows Enterprise
+        100 { $isDesktop = $true } # Windows Enterprise N
+        101 { $isDesktop = $true } # Windows Server Standard Core
+        103 { $isDesktop = $true } # Windows Server Datacenter Core
+        121 { $isDesktop = $true } # Windows Home Single Language
+        125 { $isDesktop = $true } # Windows Home China
+        129 { $isDesktop = $true } # Windows Professional with Media Center
+        130 { $isDesktop = $true } # Windows Professional with Media Center N
+        131 { $isDesktop = $true } # Windows IoT Core
+        132 { $isDesktop = $true } # Windows IoT Core N
+        133 { $isDesktop = $true } # Windows S
+        148 { $isDesktop = $true } # Windows Home Single Language with Bing
+        189 { $isDesktop = $true } # Windows Professional Education
+        190 { $isDesktop = $true } # Windows Professional Education N
+        191 { $isDesktop = $true } # Windows Server Semi-Annual Channel
+        205 { $isDesktop = $true } # Windows Server Semi-Annual Channel Core
+        219 { $isDesktop = $true } # Windows Server Essentials Semi-Annual Channel
+        220 { $isDesktop = $true } # Windows Server Essentials Semi-Annual Channel Core
+        221 { $isDesktop = $true } # Windows Professional for Workstations
+        222 { $isDesktop = $true } # Windows Professional for Workstations N
+        252 { $isDesktop = $true } # Windows Business
+        251 { $isDesktop = $true } # Windows Business N
+        default { $isDesktop = $false } # Default to false for other SKUs
+    }
+
+    return $isDesktop
+}
 
 function Install-Modules
 {
@@ -92,26 +152,40 @@ function Install-Modules
         [Parameter(Mandatory)]
         $modules
     )
-    if ( -not(Get-PSRepository -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*psgallery*' }) )
+    
+    BEGIN
     {
-        Write-Warning -fore Magenta '>> Fixing PsGallery, please wait... <<'
-        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-        Register-PSRepository -Default -Verbose
+
     }
-    foreach ($moduleName in $modules.Keys)
+    
+    PROCESS
     {
-        $desiredVersion = $modules[$moduleName]
-        $installedModule = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue | Where-Object { $_.Version -eq $desiredVersion }
-        if ($null -eq $installedModule)
+        if ( -not(Get-PSRepository -ErrorAction SilentlyContinue | Where-Object { $_.Name -like '*psgallery*' }) )
         {
-            Write-Warning "$moduleName version $desiredVersion is NOT yet installed on $($Env:COMPUTERNAME). Installing..."
-            Install-Module -Name $moduleName -RequiredVersion $desiredVersion -Force -Confirm:$false
-            Write-Information "$moduleName version $desiredVersion has been installed on $($Env:COMPUTERNAME)."
+            Write-Warning -fore Magenta '>> Fixing PsGallery, please wait... <<'
+            [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
+            Register-PSRepository -Default -Verbose
         }
-        else
+        foreach ($moduleName in $modules.Keys)
         {
-            Write-Warning "$moduleName version $desiredVersion is already installed on $($Env:COMPUTERNAME)."
+            $desiredVersion = $modules[$moduleName]
+            $installedModule = Get-Module -Name $moduleName -ListAvailable -ErrorAction SilentlyContinue | Where-Object { $_.Version -eq $desiredVersion }
+            if ($null -eq $installedModule)
+            {
+                Write-Warning "$moduleName version $desiredVersion is NOT yet installed on $($Env:COMPUTERNAME). Installing..."
+                Install-Module -Name $moduleName -RequiredVersion $desiredVersion -Force -Confirm:$false
+                Write-Information "$moduleName version $desiredVersion has been installed on $($Env:COMPUTERNAME)."
+            }
+            else
+            {
+                Write-Warning "$moduleName version $desiredVersion is already installed on $($Env:COMPUTERNAME)."
+            }
         }
+    }
+
+    END
+    {
+
     }
 }
 
