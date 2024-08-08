@@ -292,7 +292,7 @@ Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -Up
             [ValidateNotNullOrEmpty()][ValidateSet('workgroup', 'domain')]
             $Option,
 
-            [Parameter(Mandatory=$true,Position=2,ValueFromPipelineByPropertyName=$true)]
+            [Parameter(Mandatory=$false,Position=2,ValueFromPipelineByPropertyName=$true)]
             [ValidateNotNullOrEmpty()]
             $DomainName
             )
