@@ -265,11 +265,15 @@ function Set-InitialConfigDsc {
 
     .PARAMETER NewComputerName
     .PARAMETER Option
+    .PARAMETER DomainName    
     .EXAMPLE
 Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Workgroup -Verbose
 
     .EXAMPLE
 Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -Verbose
+
+.EXAMPLE
+Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -DomainName 'lab.local' -Verbose
 
     .EXAMPLE
 Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
@@ -321,9 +325,40 @@ Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -Up
                 #region - Initial Setup - WorkGroup
                 # The -UpdatePowerShellHelp Parameter updates powershell help on the target node
 
+                # Use PSBoundParameters to determine which parameters were passed
+                Write-Information "Parameters passed into the function:"
 
-                Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -Verbose
-                #endregion
+                if ($PSBoundParameters.ContainsKey('NewComputerName')) {
+                    Write-Information "NewComputerName: $NewComputerName"
+                }
+
+                if ($PSBoundParameters.ContainsKey('Option')) {
+                    Write-Information "Option: $Option"
+                }
+
+                if ($PSBoundParameters.ContainsKey('DomainName')) {
+                    Write-Information "DomainName: $DomainName"
+                }
+
+                # Perform actions based on the 'Option' parameter
+                switch ($Option) {
+                    'Workgroup' {
+                        Write-Information "The computer will be configured to join a Workgroup."
+                        Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -Verbose
+                        if ($DomainName) {
+                            Write-Warning "DomainName was provided, but it is ignored since Option is 'Workgroup'."
+                        }
+                    }
+                    'Domain' {
+                        Write-Information "The computer will be configured to join a Domain."
+                        if ($DomainName) {
+                            Write-Information "DomainName provided: $DomainName"
+                            Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -DomainName $DomainName -Verbose
+                        } else {
+                            Write-Warning "No DomainName provided, pleaes make use of the -DomainName Parameter"
+                        }
+                    }
+                }
             }
             catch {
     
