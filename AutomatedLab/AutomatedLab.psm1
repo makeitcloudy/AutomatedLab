@@ -266,13 +266,13 @@ function Set-InitialConfigDsc {
     .PARAMETER NewComputerName
     .PARAMETER Option
     .EXAMPLE
-Set-InitialConfigDsc -NewComputerName $NodeName -Option Workgroup -Verbose
+Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Workgroup -Verbose
 
     .EXAMPLE
-Set-InitialConfigDsc -NewComputerName $NodeName -Option Domain -Verbose
+Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -Verbose
 
     .EXAMPLE
-Set-InitialConfiguration -NewComputerName $NodeName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
+Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
 
     .LINK
     #>
@@ -322,7 +322,7 @@ Set-InitialConfiguration -NewComputerName $NodeName -Option WorkGroup -UpdatePow
                 # The -UpdatePowerShellHelp Parameter updates powershell help on the target node
 
 
-                Set-InitialConfigurationDsc -NewComputerName $NodeName -Option $Option -Verbose
+                Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -Verbose
                 #endregion
             }
             catch {
