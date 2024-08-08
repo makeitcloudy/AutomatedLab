@@ -256,3 +256,83 @@ function Create-SelfSignedCert
         -CertStoreLocation $certStore `
         -Password $privateKeyPass | Out-Null
 }
+
+function Set-InitialConfigDsc {
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .PARAMETER NewComputerName
+    .PARAMETER Option
+    .EXAMPLE
+Set-InitialConfigDsc -NewComputerName $NodeName -Option Workgroup -Verbose
+
+    .EXAMPLE
+Set-InitialConfigDsc -NewComputerName $NodeName -Option Domain -Verbose
+
+    .EXAMPLE
+Set-InitialConfiguration -NewComputerName $NodeName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
+
+    .LINK
+    #>
+        
+        [CmdletBinding()]
+        Param
+        (
+            [Parameter(Mandatory=$true,Position=0,ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            $NewComputerName,
+
+            [Parameter(Mandatory=$true,Position=1,ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()][ValidateSet('workgroup', 'domain')]
+            $Option
+        )
+    
+        BEGIN
+        {
+            $WarningPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $InformationPreference = "Continue"
+            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - InitialConfigDsc"
+            $startDate = Get-Date
+
+            #region - initialize variables, downlad prereqs
+            $dsc_CodeRepoUrl               = 'https://raw.githubusercontent.com/makeitcloudy/HomeLab/feature/007_DesiredStateConfiguration/000_targetNode'
+            $dsc_InitialConfigFileName     = 'InitialConfigDsc.ps1'
+            $dsc_initalConfig_demo_ps1_url = $dsc_CodeRepoUrl,$dsc_InitialConfigFileName -join '/'
+
+            $outFile = Join-Path -Path $env:USERPROFILE\Documents -ChildPath $dsc_InitialConfigFileName
+            #endregion
+        }
+    
+        PROCESS
+        {
+            try {
+                Invoke-WebRequest -Uri $dsc_initalConfig_demo_ps1_url -OutFile $outFile -Verbose
+                . $outFile
+                #psedit $outFile
+            }
+            catch {
+
+            }
+
+            try {
+                #region - Initial Setup - WorkGroup
+                # The -UpdatePowerShellHelp Parameter updates powershell help on the target node
+
+
+                Set-InitialConfigurationDsc -NewComputerName $NodeName -Option $Option -Verbose
+                #endregion
+            }
+            catch {
+    
+            }
+        }
+    
+        END
+        {
+            $endDate = Get-Date
+            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
+        }
+    }
