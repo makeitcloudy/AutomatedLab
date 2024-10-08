@@ -375,3 +375,60 @@ Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -Up
             Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
         }
     }
+
+    function Set-PLNetAdapter {
+
+        <#
+            .SYNOPSIS
+            .DESCRIPTION
+            .PARAMETER Mac
+            .PARAMETER Name
+            .PARAMETER IPAddress
+            .PARAMETER Mask
+            .EXAMPLE
+            .EXAMPLE
+            .LINK
+            #>
+                
+            [CmdletBinding()]
+            Param
+            (
+                [Parameter(Mandatory=$true,Position=0,ValueFromPipelineByPropertyName=$true)]
+                [ValidateNotNullOrEmpty()]
+                $Mac,
+        
+                [Parameter(Mandatory=$true,Position=1,ValueFromPipelineByPropertyName=$true)]
+                [ValidateNotNullOrEmpty()]
+                $Name,
+        
+                [Parameter(Mandatory=$true,Position=2,ValueFromPipelineByPropertyName=$true)]
+                [ValidateNotNullOrEmpty()]
+                $IPAddress,
+        
+                [Parameter(Mandatory=$true,Position=3,ValueFromPipelineByPropertyName=$true)]
+                [ValidateNotNullOrEmpty()]
+                $Mask
+            )
+            
+            BEGIN
+            {
+        
+            }
+        
+            PROCESS
+            {
+                $adapter = Get-NetAdapter
+                $temp = $adapter | Where-Object {($_.MacAddress -match (($Mac) -replace ':','-'))}
+                #rename adapter
+                $temp | Rename-NetAdapter -NewName $Name
+                #set ip address
+                New-NetIPAddress -InterfaceIndex $temp.InterfaceIndex -IPAddress $IPAddress -PrefixLength $Mask
+                #disable IP v6
+                Disable-NetAdapterBinding -Name $temp.Name -ComponentID ms_tcpip6
+            }
+        
+            END
+            {
+        
+            }
+        }
