@@ -257,7 +257,8 @@ function Create-SelfSignedCert
         -Password $privateKeyPass | Out-Null
 }
 
-function Set-InitialConfigDsc {
+function Set-InitialConfigDsc 
+{
     <#
     .SYNOPSIS
 
@@ -267,16 +268,16 @@ function Set-InitialConfigDsc {
     .PARAMETER Option
     .PARAMETER DomainName    
     .EXAMPLE
-Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Workgroup -Verbose
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Workgroup -Verbose
 
     .EXAMPLE
-Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -Verbose
-
-.EXAMPLE
-Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -DomainName 'lab.local' -Verbose
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -Verbose
 
     .EXAMPLE
-Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -DomainName 'lab.local' -Verbose
+
+    .EXAMPLE
+    Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
 
     .LINK
     #>
@@ -374,7 +375,127 @@ Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -Up
             $endDate = Get-Date
             Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
         }
-    }
+}
+
+function Set-InitialConfigDevDsc 
+{
+    <#
+    .SYNOPSIS
+
+    .DESCRIPTION
+
+    .PARAMETER NewComputerName
+    .PARAMETER Option
+    .PARAMETER DomainName    
+    .EXAMPLE
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Workgroup -Verbose
+
+    .EXAMPLE
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -Verbose
+
+    .EXAMPLE
+    Set-InitialConfigDsc -NewComputerName $NewComputerName -Option Domain -DomainName 'lab.local' -Verbose
+
+    .EXAMPLE
+    Set-InitialConfiguration -NewComputerName $NewComputerName -Option WorkGroup -UpdatePowerShellHelp  -Verbose
+
+    .LINK
+    #>
+        
+        [CmdletBinding()]
+        Param
+        (
+            [Parameter(Mandatory=$true,Position=0,ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            $NewComputerName,
+
+            [Parameter(Mandatory=$true,Position=1,ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()][ValidateSet('workgroup', 'domain')]
+            $Option,
+
+            [Parameter(Mandatory=$false,Position=2,ValueFromPipelineByPropertyName=$true)]
+            [ValidateNotNullOrEmpty()]
+            $DomainName
+            )
+    
+        BEGIN
+        {
+            $WarningPreference = "Continue"
+            $VerbosePreference = "Continue"
+            $InformationPreference = "Continue"
+            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - InitialConfigDsc"
+            $startDate = Get-Date
+
+            #region - initialize variables, downlad prereqs
+            $dsc_CodeRepoUrl               = 'https://raw.githubusercontent.com/makeitcloudy/HomeLab/feature/007_DesiredStateConfiguration/000_targetNode'
+            $dsc_InitialConfigFileName     = 'InitialConfigDsc-dev.ps1'
+            $dsc_initalConfig_demo_ps1_url = $dsc_CodeRepoUrl,$dsc_InitialConfigFileName -join '/'
+
+            $outFile = Join-Path -Path $env:USERPROFILE\Documents -ChildPath $dsc_InitialConfigFileName
+            #endregion
+        }
+    
+        PROCESS
+        {
+            try {
+                Invoke-WebRequest -Uri $dsc_initalConfig_demo_ps1_url -OutFile $outFile -Verbose
+                . $outFile
+                #psedit $outFile
+            }
+            catch {
+
+            }
+
+            try {
+                #region - Initial Setup - WorkGroup
+                # The -UpdatePowerShellHelp Parameter updates powershell help on the target node
+
+                # Use PSBoundParameters to determine which parameters were passed
+                Write-Information "Parameters passed into the function:"
+
+                if ($PSBoundParameters.ContainsKey('NewComputerName')) {
+                    Write-Information "NewComputerName: $NewComputerName"
+                }
+
+                if ($PSBoundParameters.ContainsKey('Option')) {
+                    Write-Information "Option: $Option"
+                }
+
+                if ($PSBoundParameters.ContainsKey('DomainName')) {
+                    Write-Information "DomainName: $DomainName"
+                }
+
+                # Perform actions based on the 'Option' parameter
+                switch ($Option) {
+                    'Workgroup' {
+                        Write-Information "The computer will be configured to join a Workgroup."
+                        Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -Verbose
+                        if ($DomainName) {
+                            Write-Warning "DomainName was provided, but it is ignored since Option is 'Workgroup'."
+                        }
+                    }
+                    'Domain' {
+                        Write-Information "The computer will be configured to join a Domain."
+                        if ($DomainName) {
+                            Write-Information "DomainName provided: $DomainName"
+                            Set-InitialConfigurationDsc -NewComputerName $NewComputerName -Option $Option -DomainName $DomainName -Verbose
+                        } else {
+                            Write-Warning "No DomainName provided, pleaes make use of the -DomainName Parameter"
+                        }
+                    }
+                }
+            }
+            catch {
+    
+            }
+        }
+    
+        END
+        {
+            $endDate = Get-Date
+            Write-Verbose "$env:COMPUTERNAME - $($MyInvocation.MyCommand) - Time taken: $("{0:%d}d:{0:%h}h:{0:%m}m:{0:%s}s" -f ((New-TimeSpan -Start $startDate -End $endDate)))"
+        }
+}
 
     function Set-PLNetAdapter {
 
